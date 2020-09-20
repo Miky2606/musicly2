@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:musicly/pages/online.dart';
 import 'package:musicly/pages/local.dart';
 import 'package:musicly/pages/online2.dart';
-import 'package:musicly/pages/playlist.dart';
+import 'package:musicly/pages/playlistHome.dart';
 
 void main() => runApp(MyApp());
 
@@ -34,7 +34,7 @@ int _currentIndex = 0;
 class _scaffoldState extends State<scaffold> {
   @override
   Widget build(BuildContext context) {
-    final tabs = [online2(), local(), playlist()];
+    final tabs = [online(), local(), playlistHome()];
 
     final size = MediaQuery.of(context).size;
     return Scaffold(
@@ -60,9 +60,9 @@ class _scaffoldState extends State<scaffold> {
             });
           },
           items: [
-            Icon(Icons.music_note, color: Colors.white, size: 35),
+            Icon(Icons.home, color: Colors.white, size: 35),
+            Icon(Icons.music_note),
             Icon(Icons.library_music, color: Colors.white, size: 35),
-            Icon(Icons.queue_music, color: Colors.white, size: 35)
           ]),
       body: tabs[_currentIndex],
     );

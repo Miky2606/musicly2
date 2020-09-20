@@ -29,6 +29,7 @@ dependencies:
   http: ^0.12.2
   assets_audio_player: ^2.0.10
   audio_manager: ^0.5.5+3
+  animated_text_kit: ^2.2.0
 
 
   

@@ -52,6 +52,13 @@ class _online2State extends State<online2> {
                     artist: datos[i]['autor'],
                     album: datos[i]['album'])));
           }
+          audioPlayer.open(
+            Playlist(
+              audios: musicPlaylist,
+            ),
+            showNotification: true,
+            loopMode: LoopMode.playlist,
+          );
           return audioPlayer.builderIsPlaying(builder: (context, playing) {
             if (playing) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,15 +73,7 @@ class _online2State extends State<online2> {
                 children: [
                   Spacer(),
                   InkWell(
-                    onTap: () {
-                      audioPlayer.open(
-                        Playlist(
-                          audios: musicPlaylist,
-                        ),
-                        showNotification: true,
-                        loopMode: LoopMode.playlist,
-                      );
-                    },
+                    onTap: () {},
                     child: Icon(
                       Icons.playlist_play,
                       size: 45.0,
@@ -154,31 +153,6 @@ class _online2State extends State<online2> {
                                                               musicPlaying =
                                                                   index;
                                                             });
-
-                                                            if (playing ==
-                                                                true) {
-                                                              audioPlayer
-                                                                  .stop();
-                                                            } else {
-                                                              if (musicPlaying ==
-                                                                  index) {
-                                                                audioPlayer
-                                                                    .playOrPause();
-                                                              } else {
-                                                                audioPlayer.open(
-                                                                    Audio.network(
-                                                                        "https://musiclyapi.herokuapp.com/music/${datos[index]['ruta']}",
-                                                                        metas: Metas(
-                                                                            title: datos[index][
-                                                                                'name'],
-                                                                            artist: datos[index][
-                                                                                'autor'],
-                                                                            album: datos[index][
-                                                                                'album'])),
-                                                                    showNotification:
-                                                                        true);
-                                                              }
-                                                            }
                                                           },
                                                           child: Icon(
                                                               Icons.play_arrow,
