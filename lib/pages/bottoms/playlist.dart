@@ -2,6 +2,7 @@ import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../displayMusic/DisplayMusic.dart';
 import '../online2.dart';
 
 class playlist extends StatefulWidget {
@@ -21,7 +22,7 @@ class _playlistState extends State<playlist> {
       child: InkWell(
         onTap: () {
           Navigator.of(context)
-              .push(MaterialPageRoute(builder: (context) => online2()));
+              .push(MaterialPageRoute(builder: (context) => DisplayMusic()));
         },
         child: Container(
           decoration: BoxDecoration(

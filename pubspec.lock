@@ -43,13 +43,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.4.2"
-  audio_manager:
-    dependency: "direct main"
-    description:
-      name: audio_manager
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.5.5+3"
   boolean_selector:
     dependency: transitive
     description:
@@ -350,6 +343,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.8"
+  wave_slider:
+    dependency: "direct main"
+    description:
+      name: wave_slider
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   xdg_directories:
     dependency: transitive
     description:

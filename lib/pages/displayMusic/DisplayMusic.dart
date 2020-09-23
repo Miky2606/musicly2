@@ -1,437 +1,224 @@
-import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
-import 'package:audio_manager/audio_manager.dart';
-
 import 'package:flare_flutter/flare_actor.dart';
-import 'package:flutter/scheduler.dart';
-
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
-import 'package:musicly/pages/bottoms/playlist.dart';
-import 'package:musicly/pages/online.dart';
-
-bool pause;
-String nombre = "";
-int index;
-bool playing;
-bool isPlaying;
-var next;
+import 'package:http/http.dart' as http;
 
 class DisplayMusic extends StatefulWidget {
-  final player;
-  final name;
-  final lista;
-  final music;
-  final play;
-
-  DisplayMusic(
-      {Key key, this.player, this.name, this.lista, this.music, this.play})
-      : super(key: key);
+  DisplayMusic({Key key}) : super(key: key);
 
   @override
   _DisplayMusicState createState() => _DisplayMusicState();
 }
 
-class _DisplayMusicState extends State<DisplayMusic> {
-  void setState(fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
-  }
+Future<void> getDatos() async {
+  var response = await http.get("https://musiclyapi.herokuapp.com/musicAll");
 
-  final assets = AssetsAudioPlayer();
+  return response.body;
+}
+
+class _DisplayMusicState extends State<DisplayMusic> {
+  bool play;
+  String audio;
+  var music;
+  var musicPlaying;
+  List<Audio> musicPlaylist = [];
+  AssetsAudioPlayer audioPlayer = AssetsAudioPlayer();
 
   @override
   void initState() {
-    play();
-
     setState(() {
-      nombre = widget.name;
-      index = widget.music;
-      playing = false;
-      pause = true;
+      play = false;
+      music = getDatos();
+      audio = "";
     });
     super.initState();
   }
 
-  play() async {
-    try {
-      assets.open(
-          Audio.network(
-              "https://musiclyapi.herokuapp.com/music/${widget.lista[widget.music]['ruta']}",
-              metas: Metas(
-                  title: widget.lista[widget.music]['name'],
-                  artist: widget.lista[widget.music]['autor'],
-                  album: widget.lista[widget.music]['album'])),
-          showNotification: true,
-          audioFocusStrategy: AudioFocusStrategy.request(
-              resumeAfterInterruption: true,
-              resumeOthersPlayersAfterDone: true),
-          notificationSettings: NotificationSettings(
-            customNextAction: (player) => {forward()},
-            customPrevAction: (player) => {rewind()},
-            seekBarEnabled: true,
-          ));
-    } catch (error) {}
-  }
-
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-          height: double.infinity,
-          child: ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(child: Text("${nombre}")),
+    final size = MediaQuery.of(context).size;
+    return FutureBuilder(
+        future: music,
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (!snapshot.hasData) {
+            return Center(child: CircularProgressIndicator());
+          } else {
+            Map data = json.decode(snapshot.data);
+            List datos = data['music'];
+            for (var i = 0; i < datos.length; i++) {
+              musicPlaylist.add(Audio.network(
+                  "https://musiclyapi.herokuapp.com/music/${datos[i]['ruta']}",
+                  metas: Metas(
+                      title: datos[i]['name'],
+                      artist: datos[i]['autor'],
+                      album: datos[i]['album'],
+                      image: MetasImage.asset("assets/icon/icon.png"))));
+            }
+            audioPlayer.open(
+              Playlist(
+                audios: musicPlaylist,
               ),
-              Padding(
-                padding: const EdgeInsets.all(25.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.0),
-                      color: Colors.white),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Image.asset(
-                      "assets/icon/icon.png",
-                    ),
-                  ),
+              showNotification: true,
+              loopMode: LoopMode.playlist,
+            );
+
+            return Scaffold(
+              body: Container(
+                decoration: BoxDecoration(),
+                height: size.height,
+                child: ListView(
+                  children: [
+                    Text("playlistName"),
+                    Container(
+                        height: size.height,
+                        child: Stack(children: [
+                          FlareActor("assets/animation/aura.flr"),
+                          ListView.builder(
+                              itemCount: datos.length,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Card(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Column(
+                                        children: [
+                                          Row(children: [
+                                            CircleAvatar(
+                                                child: Image.asset(
+                                                    "assets/icon/icon.png")),
+                                            Spacer(),
+                                            Text("name"),
+                                            Spacer(),
+                                            audioPlayer.builderCurrent(
+                                                builder: (context, current) {
+                                              if (current == null) {
+                                                return InkWell(
+                                                    onTap: () {
+                                                      audioPlayer
+                                                          .playlistPlayAtIndex(
+                                                              index);
+                                                    },
+                                                    child:
+                                                        Icon(Icons.play_arrow));
+                                              } else {
+                                                return audioPlayer
+                                                    .builderIsPlaying(builder:
+                                                        (context, playing) {
+                                                  if (audioPlayer
+                                                          .current
+                                                          .value
+                                                          .playlist
+                                                          .currentIndex ==
+                                                      index) {
+                                                    if (playing == false) {
+                                                      return InkWell(
+                                                          onTap: () {
+                                                            audioPlayer
+                                                                .playOrPause();
+                                                          },
+                                                          child: Icon(Icons
+                                                              .play_arrow));
+                                                    } else {
+                                                      return InkWell(
+                                                          onTap: () {
+                                                            audioPlayer
+                                                                .playOrPause();
+                                                          },
+                                                          child: Icon(
+                                                              Icons.pause));
+                                                    }
+                                                  } else {
+                                                    return InkWell(
+                                                        onTap: () {
+                                                          audioPlayer
+                                                              .playlistPlayAtIndex(
+                                                                  index);
+                                                        },
+                                                        child: Icon(
+                                                            Icons.play_arrow));
+                                                  }
+                                                });
+                                              }
+                                            }),
+                                            Icon(Icons.more_vert)
+                                          ]),
+                                          audioPlayer.builderCurrent(
+                                              builder: (context, current) {
+                                            if (current == null) {
+                                              return Slider(
+                                                max: 25,
+                                                value: 0,
+                                                onChanged: null,
+                                                activeColor: Colors.cyanAccent,
+                                              );
+                                            } else {
+                                              return audioPlayer
+                                                  .builderRealtimePlayingInfos(
+                                                      builder:
+                                                          (context, infos) {
+                                                if (infos == null) {
+                                                  return LinearProgressIndicator();
+                                                } else {
+                                                  if (audioPlayer
+                                                          .current
+                                                          .value
+                                                          .playlist
+                                                          .currentIndex ==
+                                                      index) {
+                                                    return Slider(
+                                                      max: infos
+                                                          .duration.inSeconds
+                                                          .toDouble(),
+                                                      value: infos
+                                                          .currentPosition
+                                                          .inSeconds
+                                                          .toDouble(),
+                                                      onChanged:
+                                                          (double value) {
+                                                        audioPlayer.seek(
+                                                            Duration(
+                                                                seconds: value
+                                                                    .toInt()));
+                                                      },
+                                                      activeColor:
+                                                          Colors.cyanAccent,
+                                                    );
+                                                  } else {
+                                                    return Slider(
+                                                      max: 25,
+                                                      value: 0,
+                                                      onChanged: null,
+                                                      activeColor:
+                                                          Colors.cyanAccent,
+                                                    );
+                                                  }
+                                                }
+                                              });
+                                            }
+                                          })
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                        ])),
+                  ],
                 ),
               ),
-              Align(
-                  alignment: Alignment.center,
-                  child: InkWell(
-                      onTap: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return ModalPlaylist(music: widget.name);
-                            });
-                      },
-                      child: Icon(Icons.playlist_add))),
-              PlayerBuilder.isPlaying(
-                  player: assets,
-                  builder: (context, playing) {
-                    SchedulerBinding.instance.addPostFrameCallback((_) {
-                      setState(() {
-                        pause = playing;
-                      });
-                    });
-
-                    return assets.builderRealtimePlayingInfos(
-                        builder: (context, snapshot) {
-                      if (snapshot == null) {
-                        return LinearProgressIndicator();
-                      }
-
-                      if (snapshot.duration < snapshot.currentPosition) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          setState(() {
-                            index++;
-                            if (index > widget.lista.length - 1) {
-                              index = 0;
-                            }
-                          });
-                        });
-
-                        print(index);
-
-                        assets.open(
-                            Audio.network(
-                                "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-                                metas: Metas(
-                                    title: widget.lista[index]['name'],
-                                    artist: widget.lista[index]['autor'],
-                                    album: widget.lista[index]['album'])),
-                            showNotification: true,
-                            audioFocusStrategy: AudioFocusStrategy.request(
-                                resumeAfterInterruption: true,
-                                resumeOthersPlayersAfterDone: true),
-                            notificationSettings: NotificationSettings(
-                              customNextAction: (player) => {forward()},
-                              customPrevAction: (player) => {rewind()},
-                              seekBarEnabled: true,
-                            ));
-
-                        SchedulerBinding.instance.addPostFrameCallback((_) {
-                          setState(() {
-                            nombre = widget.lista[index]['name'];
-                          });
-                        });
-                      }
-
-                      return Slider(
-                        max: snapshot.duration.inSeconds.toDouble(),
-                        value: snapshot.currentPosition.inSeconds.toDouble(),
-                        onChanged: (double value) {
-                          assets.seek(Duration(seconds: value.toInt()));
-                        },
-                        activeColor: Colors.blue,
-                        inactiveColor: Colors.purple,
-                      );
-                    });
-                  }),
-
-              /*  _position == null
-                  ? LinearProgressIndicator()
-                  : Slider(
-                      max: _duration.inSeconds.toDouble(),
-                      value: _position.inSeconds.toDouble(),
-                      onChanged: (double value) {
-                        AudioManager.instance
-                            .seekTo(Duration(seconds: value.toInt()));
-                      },
-                      activeColor: Colors.blue,
-                      inactiveColor: Colors.purple,
-                    ), */
-              Center(
-                child: Container(
-                  width: 150.0,
-                  child: Card(
-                      child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: () async {
-                            rewind();
-                          },
-                          child: Icon(
-                            Icons.fast_rewind,
-                            size: 35,
-                          ),
-                        ),
-                        Spacer(),
-                        pause == true
-                            ? InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    pause = false;
-                                  });
-
-                                  assets.playOrPause();
-                                },
-                                child: Icon(Icons.pause))
-                            : InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    pause = true;
-                                  });
-                                  assets.playOrPause();
-                                },
-                                child: (Icon(Icons.play_arrow))),
-                        Spacer(),
-                        InkWell(
-                            onTap: () async {
-                              forward();
-                            },
-                            child: Icon(Icons.fast_forward, size: 35))
-                      ],
-                    ),
-                  )),
-                ),
-              ),
-            ],
-          )),
-    );
-  }
-
-  void next() {
-    forward();
-  }
-
-  void forward() {
-    setState(() {
-      index++;
-    });
-
-    if (index > widget.lista.length - 1) {
-      setState(() {
-        index = 0;
-      });
-    }
-    print(index);
-
-    assets.open(
-        Audio.network(
-            "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-            metas: Metas(
-                title: widget.lista[index]['name'],
-                artist: widget.lista[index]['autor'],
-                album: widget.lista[index]['album'])),
-        showNotification: true,
-        audioFocusStrategy: AudioFocusStrategy.request(
-            resumeAfterInterruption: true, resumeOthersPlayersAfterDone: true),
-        notificationSettings: NotificationSettings(
-          customNextAction: (player) => {forward()},
-          customPrevAction: (player) => {rewind()},
-          seekBarEnabled: true,
-        ));
-    /* AudioManager.instance
-            .start(
-                "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-                // "network format resource"
-                // "local resource (file://${file.path})"
-                "${widget.lista[index]['ruta']}",
-                desc: "desc",
-                // cover: "network cover image resource"
-                cover: "assets/icon/icon.png")
-            .then((err) {
-          print(err);
+            );
+          }
         });
- */
-
-    setState(() {
-      nombre = widget.lista[index]['name'];
-    });
-
-    /*  } else {
-      setState(() {
-        index++;
-      });
-      if (index > widget.lista.length - 1) {
-        setState(() {
-          index = 0;
-        });
-      }
-
-      print(index);
-      assets.open(
-        Audio.network(
-            "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-            metas: Metas(
-                title: widget.lista[index]['name'],
-                artist: widget.lista[index]['autor'],
-                album: widget.lista[index]['album'])),
-        showNotification: true,
-      ); */
-    /* AudioManager.instance
-            .start(
-                "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-                // "network format resource"
-                // "local resource (file://${file.path})"
-                "${widget.lista[index]['name']}",
-                desc: "desc",
-                // cover: "network cover image resource"
-                cover: "assets/icon/icon.png")
-            .then((err) {
-          print(err);
-        });
- */
-    /*  setState(() {
-        nombre = widget.lista[index]['name'];
-      });
-    } */
   }
 
-  void rewind() {
-    setState(() {
-      index--;
-    });
-
-    if (index < 0) {
-      setState(() {
-        index = widget.lista.length - 1;
-      });
-    }
-
-    print(index);
-
-    widget.player.pause();
-    var x = true;
-    if (x = true) {
-      assets.open(
-          Audio.network(
-              "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-              metas: Metas(
-                  title: widget.lista[index]['name'],
-                  artist: widget.lista[index]['autor'],
-                  album: widget.lista[index]['album'])),
-          showNotification: true,
-          audioFocusStrategy: AudioFocusStrategy.request(
-              resumeAfterInterruption: true,
-              resumeOthersPlayersAfterDone: true),
-          notificationSettings: NotificationSettings(
-            customNextAction: (player) => {forward()},
-            customPrevAction: (player) => {rewind()},
-            seekBarEnabled: true,
-          ));
-
-      /* var play = widget.player.setUrl(
-            'https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}');
-        widget.player.play();
-        AudioManager.instance
-            .start(
-                "https://musiclyapi.herokuapp.com/music/${widget.lista[index]['ruta']}",
-                // "network format resource"
-                // "local resource (file://${file.path})"
-                "${widget.lista[index]['name']}",
-                desc: "desc",
-                // cover: "network cover image resource"
-                cover: "assets/icon/icon.png")
-            .then((err) {
-          print(err);
-        }); */
-
-      setState(() {
-        nombre = widget.lista[index]['name'];
-      });
-    }
-  }
-
-/*   @override
- /*  void dispose() {
-    // 释放所有资源
-    AudioManager.instance.stop();
+  @override
+  void dispose() {
+    audioPlayer.dispose();
     super.dispose();
-  } */ */
-}
-
-class ModalPlaylist extends StatelessWidget {
-  final music;
-  const ModalPlaylist({Key key, this.music}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        child: ListView(children: [
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(child: Text("${this.music}")),
-      ),
-      Divider(),
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(child: Text("Playlist")),
-      ),
-      Divider(),
-      Playlist(),
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: RaisedButton(
-            color: Colors.green, onPressed: () {}, child: Text("New Playlist")),
-      )
-    ]));
-  }
-}
-
-class Playlist extends StatelessWidget {
-  const Playlist({
-    Key key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 170,
-      child: ListView(scrollDirection: Axis.horizontal, children: [
-        Row(
-          children: [playlist(), playlist(), playlist()],
-        )
-      ]),
-    );
   }
 }

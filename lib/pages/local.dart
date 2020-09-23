@@ -2,9 +2,6 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 
 import 'bottoms/playlist.dart';
-import 'bottoms/playlist.dart';
-import 'bottoms/playlist.dart';
-import 'bottoms/playlist.dart';
 
 class local extends StatefulWidget {
   local({Key key}) : super(key: key);

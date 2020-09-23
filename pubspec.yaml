@@ -28,8 +28,8 @@ dependencies:
   flare_flutter: ^2.0.6
   http: ^0.12.2
   assets_audio_player: ^2.0.10
-  audio_manager: ^0.5.5+3
   animated_text_kit: ^2.2.0
+  wave_slider: ^0.2.0
 
 
   
